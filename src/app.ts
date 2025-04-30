@@ -11,7 +11,6 @@ import authRoutes from './routes/auth.routes';
 import financialSourceRoutes from './routes/financialSource.routes';
 import financialSourceUpdateRoutes from './routes/financialSourceUpdate.routes';
 
-// Load environment variables
 dotenv.config();
 
 // Create Express app
@@ -28,9 +27,29 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // Request logging with Morgan
 app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined'));
 
-// Implement CORS
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if(!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://personal-finance-tracker-eight-green.vercel.app'
+    ];
+    
+    // Add CLIENT_URL from env if it exists and is not already in the list
+    if (process.env.CLIENT_URL && !allowedOrigins.includes(process.env.CLIENT_URL)) {
+      allowedOrigins.push(process.env.CLIENT_URL);
+    }
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked for origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 

@@ -4,12 +4,11 @@ import dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
-// Create Sequelize instance
 let sequelize: Sequelize;
 
-// Check if we're in production and have a DATABASE_URL (Railway provides this)
+// Check if we're in production and have a DATABASE_URL 
 if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
-  // Use the DATABASE_URL in production
+  
   sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',
     logging: false,
@@ -17,7 +16,7 @@ if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
       // Support for IPv6 connections
       ssl: {
         require: true,
-        rejectUnauthorized: false // This might be needed depending on your Railway setup
+        rejectUnauthorized: false 
       }
     },
     pool: {
@@ -39,7 +38,8 @@ if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
     host: dbHost,
     port: parseInt(dbPort, 10),
     dialect: 'postgres',
-    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    // logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    logging:false,
     pool: {
       max: 5,
       min: 0,
