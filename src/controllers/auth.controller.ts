@@ -130,3 +130,82 @@ export const updatePassword = catchAsync(async (req: Request, res: Response, nex
   // Send token to client
   createSendToken(user, 200, res);
 });
+
+// Update user profile
+export const updateProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const { name, email } = req.body;
+  
+  // Check if email and name are provided
+  if (!email || !name) {
+    return next(new AppError('Please provide both name and email', 400));
+  }
+
+  // Get user from database
+  const user = await User.findByPk(req.user.id);
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
+  
+  // Check if email is already taken (if changing email)
+  if (email !== user.email) {
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      return next(new AppError('Email is already in use', 400));
+    }
+  }
+
+  // Update user profile
+  user.name = name;
+  user.email = email;
+  await user.save();
+
+  // Send updated user data
+  res.status(200).json({
+    status: 'success',
+    data: {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        notification_settings: user.notification_settings,
+        created_at: user.created_at,
+        updated_at: user.updated_at
+      }
+    }
+  });
+});
+
+// Update notification settings
+export const updateNotificationSettings = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const { notification_settings } = req.body;
+  
+  // Check if notification settings are provided
+  if (!notification_settings) {
+    return next(new AppError('Please provide notification settings', 400));
+  }
+
+  // Get user from database
+  const user = await User.findByPk(req.user.id);
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
+
+  // Update notification settings
+  user.notification_settings = notification_settings;
+  await user.save();
+
+  // Send updated user data
+  res.status(200).json({
+    status: 'success',
+    data: {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        notification_settings: user.notification_settings,
+        created_at: user.created_at,
+        updated_at: user.updated_at
+      }
+    }
+  });
+});

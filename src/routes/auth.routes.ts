@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, logout, getCurrentUser, updatePassword } from '../controllers/auth.controller';
+import { register, login, logout, getCurrentUser, updatePassword, updateProfile, updateNotificationSettings } from '../controllers/auth.controller';
 import { protect } from '../middlewares/auth.middleware';
 import { validateRequest, authSchemas } from '../utils/validators';
 
@@ -14,5 +14,7 @@ router.get('/logout', logout);
 router.use(protect);
 router.get('/me', getCurrentUser);
 router.patch('/update-password', validateRequest(authSchemas.updatePassword), updatePassword);
+router.patch('/update-profile', updateProfile);
+router.patch('/update-notification-settings', updateNotificationSettings);
 
 export default router;

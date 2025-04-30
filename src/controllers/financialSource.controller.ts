@@ -265,14 +265,23 @@ export const getHistoricalNetWorth = catchAsync(async (req: Request, res: Respon
   const dateMap = new Map();
   
   updates.forEach(update => {
-    const date = update.date.toISOString().split('T')[0];
-    
-    if (!dateMap.has(date)) {
-      dateMap.set(date, {
-        date,
-        netWorth: 0,
-        sources: {}
-      });
+    // Ensure date is a valid Date object
+    let dateObj;
+    try {
+      // Handle if date is a string or already a Date object
+      dateObj = update.date instanceof Date ? update.date : new Date(update.date);
+      const dateStr = dateObj.toISOString().split('T')[0];
+      
+      if (!dateMap.has(dateStr)) {
+        dateMap.set(dateStr, {
+          date: dateStr,
+          netWorth: 0,
+          sources: {}
+        });
+      }
+    } catch (error) {
+      console.error(`Invalid date format for update ID ${update.id}:`, update.date);
+      // Skip this update if date is invalid
     }
   });
 
@@ -287,9 +296,15 @@ export const getHistoricalNetWorth = catchAsync(async (req: Request, res: Respon
     const dateData = dateMap.get(date);
     
     // Get updates for this date
-    const dateUpdates = updates.filter(update => 
-      update.date.toISOString().split('T')[0] === date
-    );
+    const dateUpdates = updates.filter(update => {
+      try {
+        // Handle if date is a string or already a Date object
+        const dateObj = update.date instanceof Date ? update.date : new Date(update.date);
+        return dateObj.toISOString().split('T')[0] === date;
+      } catch (error) {
+        return false;
+      }
+    });
     
     // Update the latest balance for each source that has an update on this date
     dateUpdates.forEach(update => {
