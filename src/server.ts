@@ -1,6 +1,6 @@
 import app from './app';
 import dotenv from 'dotenv';
-import sequelize, { testConnection } from './config/database';
+import sequelize, { testConnection, syncModels } from './config/database';
 
 // Load environment variables
 dotenv.config();
@@ -15,8 +15,11 @@ const startServer = async () => {
     await testConnection();
     
     // Sync all models with database
-    await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
-    console.log('Database synced successfully');
+    // Temporarily enabled for all environments
+    await syncModels();
+    // TODO: Change back to only sync in development later
+    // await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
+    // console.log('Database synced successfully');
 
     // Start server
     app.listen(port, () => {
