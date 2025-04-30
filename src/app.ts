@@ -1,12 +1,15 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { errorHandler } from './middlewares/error.middleware';
 import { AppError } from './utils/appError';
 
 // Import routes
 import authRoutes from './routes/auth.routes';
+import financialSourceRoutes from './routes/financialSource.routes';
+import financialSourceUpdateRoutes from './routes/financialSourceUpdate.routes';
 
 // Load environment variables
 dotenv.config();
@@ -22,9 +25,12 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+// Request logging with Morgan
+app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined'));
+
 // Implement CORS
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: process.env.CLIENT_URL || 'http://localhost:3000',
   credentials: true
 }));
 
@@ -37,6 +43,8 @@ app.use(cookieParser());
 
 // API routes
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/financial-sources', financialSourceRoutes);
+app.use('/api/v1/financial-sources/:sourceId/updates', financialSourceUpdateRoutes);
 
 // Health check route
 app.get('/api/v1/health', (req: Request, res: Response) => {

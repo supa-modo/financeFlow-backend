@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from './appError';
+import { FinancialSourceType } from '../models/financialSource.model';
 
 // Validation schemas
 export const authSchemas = {
@@ -36,6 +37,55 @@ export const authSchemas = {
     message: 'New passwords do not match',
     path: ['newPasswordConfirm']
   })
+};
+
+// Financial source schemas
+export const financialSourceSchemas = {
+  // Create financial source schema
+  create: z.object({
+    name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name must be less than 100 characters'),
+    type: z.nativeEnum(FinancialSourceType, {
+      errorMap: () => ({ message: 'Invalid financial source type' })
+    }),
+    description: z.string().max(500, 'Description must be less than 500 characters').optional().nullable(),
+    colorCode: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid color code format (must be #RRGGBB)').optional().nullable(),
+    initialBalance: z.number().nonnegative('Balance must be a non-negative number').optional(),
+    notes: z.string().max(500, 'Notes must be less than 500 characters').optional().nullable()
+  }),
+
+  // Update financial source schema
+  update: z.object({
+    name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name must be less than 100 characters').optional(),
+    type: z.nativeEnum(FinancialSourceType, {
+      errorMap: () => ({ message: 'Invalid financial source type' })
+    }).optional(),
+    description: z.string().max(500, 'Description must be less than 500 characters').optional().nullable(),
+    colorCode: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid color code format (must be #RRGGBB)').optional().nullable(),
+    isActive: z.boolean().optional()
+  }),
+
+  // Delete financial source schema (empty, just for consistency)
+  delete: z.object({})
+};
+
+// Financial source update schemas
+export const financialSourceUpdateSchemas = {
+  // Create update schema
+  create: z.object({
+    balance: z.number().nonnegative('Balance must be a non-negative number'),
+    notes: z.string().max(500, 'Notes must be less than 500 characters').optional().nullable(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format').optional()
+  }),
+
+  // Update update schema
+  update: z.object({
+    balance: z.number().nonnegative('Balance must be a non-negative number').optional(),
+    notes: z.string().max(500, 'Notes must be less than 500 characters').optional().nullable(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format').optional()
+  }),
+
+  // Delete update schema (empty, just for consistency)
+  delete: z.object({})
 };
 
 // Middleware factory for validating request body
