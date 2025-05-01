@@ -108,24 +108,33 @@ export const getCurrentUser = catchAsync(async (req: Request, res: Response, nex
 export const updatePassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const { currentPassword, newPassword, newPasswordConfirm } = req.body;
   
+  // Check if all required fields are provided
+  if (!currentPassword || !newPassword || !newPasswordConfirm) {
+    return next(new AppError('Please provide all password fields', 400));
+  }
+  
   // Check if new passwords match
   if (newPassword !== newPasswordConfirm) {
     return next(new AppError('New passwords do not match', 400));
   }
 
-  // Get user from database
+  // Get user from database with fresh data
   const user = await User.findByPk(req.user.id);
   if (!user) {
     return next(new AppError('User not found', 404));
   }
 
   // Check if current password is correct
-  if (!(await user.correctPassword(currentPassword))) {
+  const isPasswordCorrect = await user.correctPassword(currentPassword);
+  if (!isPasswordCorrect) {
     return next(new AppError('Your current password is incorrect', 401));
   }
 
   // Update password
   await user.changePassword(newPassword);
+  
+  // Reload user to get updated data
+  await user.reload();
 
   // Send token to client
   createSendToken(user, 200, res);

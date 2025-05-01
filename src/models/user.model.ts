@@ -33,7 +33,8 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
 
   // Method to change password
   public async changePassword(newPassword: string): Promise<void> {
-    this.password = await bcrypt.hash(newPassword, 12);
+    // We don't need to hash the password here as it will be hashed by the beforeSave hook
+    this.password = newPassword;
     await this.save();
   }
 }
