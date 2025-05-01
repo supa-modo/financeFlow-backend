@@ -20,16 +20,26 @@ const createSendToken = (user: User, statusCode: number, res: Response) => {
     updated_at: user.updated_at
   };
 
-  // Set JWT as cookie
-  res.cookie('jwt', token, {
+  // Determine if we're in production
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  // Configure cookie options for cross-domain support in production
+  const cookieOptions = {
     expires: new Date(Date.now() + cookieExpiresIn * 24 * 60 * 60 * 1000),
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production'
-  });
+    secure: isProduction,
+    sameSite: isProduction ? 'none' as const : 'lax' as const,
+    // In production, don't specify domain to let browser set it automatically
+    // This helps with cross-domain issues
+  };
 
+  // Set JWT as cookie
+  res.cookie('jwt', token, cookieOptions);
+
+  // Always include token in response body for production fallback
   res.status(statusCode).json({
     status: 'success',
-    token,
+    token, // Include token in response for production fallback
     data: {
       user: userWithoutPassword
     }

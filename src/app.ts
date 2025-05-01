@@ -33,9 +33,12 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl requests)
     if(!origin) return callback(null, true);
     
+    // Define allowed origins
     const allowedOrigins = [
       'http://localhost:3000',
-      'https://personal-finance-tracker-eight-green.vercel.app'
+      'http://localhost:5173', // Vite default dev server
+      'https://personal-finance-tracker-eight-green.vercel.app',
+      'https://financeflow-app.netlify.app'
     ];
     
     // Add CLIENT_URL from env if it exists and is not already in the list
@@ -43,6 +46,15 @@ app.use(cors({
       allowedOrigins.push(process.env.CLIENT_URL);
     }
     
+    // In development, be more permissive with CORS
+    if (process.env.NODE_ENV === 'development') {
+      // Allow any localhost origin in development
+      if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+        return callback(null, true);
+      }
+    }
+    
+    // Check if origin is allowed
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
@@ -50,7 +62,9 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // Body parser, reading data from body into req.body
