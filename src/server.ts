@@ -16,10 +16,10 @@ const startServer = async () => {
     
     // Sync all models with database
     // Temporarily enabled for all environments
-    // await syncModels();
+    await syncModels();
     // TODO: Change back to only sync in development later
-    await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
-    console.log('Database synced successfully');
+    // await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
+    // console.log('Database synced successfully');
 
     // Start server
     app.listen(port, () => {

@@ -63,13 +63,14 @@ export const getFinancialSource = catchAsync(async (req: Request, res: Response,
 // Create a new financial source
 export const createFinancialSource = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const userId = req.user.id;
-  const { name, type, description, colorCode, initialBalance, notes } = req.body;
+  const { name, type, institution, description, colorCode, initialBalance, notes } = req.body;
 
   // Create the financial source
   const financialSource = await FinancialSource.create({
     user_id: userId,
     name,
     type,
+    institution: institution || null,
     description: description || null,
     color_code: colorCode || null,
     is_active: true
@@ -109,7 +110,7 @@ export const createFinancialSource = catchAsync(async (req: Request, res: Respon
 export const updateFinancialSource = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const userId = req.user.id;
   const { id } = req.params;
-  const { name, type, description, colorCode, isActive } = req.body;
+  const { name, type, institution, description, colorCode, isActive } = req.body;
 
   // Find the financial source
   const financialSource = await FinancialSource.findOne({
@@ -124,6 +125,7 @@ export const updateFinancialSource = catchAsync(async (req: Request, res: Respon
   await financialSource.update({
     name: name !== undefined ? name : financialSource.name,
     type: type !== undefined ? type : financialSource.type,
+    institution: institution !== undefined ? institution : financialSource.institution,
     description: description !== undefined ? description : financialSource.description,
     color_code: colorCode !== undefined ? colorCode : financialSource.color_code,
     is_active: isActive !== undefined ? isActive : financialSource.is_active

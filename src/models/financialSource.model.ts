@@ -19,6 +19,7 @@ interface FinancialSourceAttributes {
   user_id: string;
   name: string;
   type: FinancialSourceType;
+  institution: string | null;
   description: string | null;
   color_code: string | null;
   is_active: boolean;
@@ -27,7 +28,7 @@ interface FinancialSourceAttributes {
 }
 
 // Financial source creation attributes interface (optional fields for creation)
-interface FinancialSourceCreationAttributes extends Optional<FinancialSourceAttributes, 'id' | 'description' | 'color_code' | 'is_active' | 'created_at' | 'updated_at'> {}
+interface FinancialSourceCreationAttributes extends Optional<FinancialSourceAttributes, 'id' | 'institution' | 'description' | 'color_code' | 'is_active' | 'created_at' | 'updated_at'> {}
 
 // Financial source model class
 class FinancialSource extends Model<FinancialSourceAttributes, FinancialSourceCreationAttributes> implements FinancialSourceAttributes {
@@ -35,6 +36,7 @@ class FinancialSource extends Model<FinancialSourceAttributes, FinancialSourceCr
   public user_id!: string;
   public name!: string;
   public type!: FinancialSourceType;
+  public institution!: string | null;
   public description!: string | null;
   public color_code!: string | null;
   public is_active!: boolean;
@@ -74,6 +76,10 @@ FinancialSource.init(
     type: {
       type: DataTypes.ENUM(...Object.values(FinancialSourceType)),
       allowNull: false,
+    },
+    institution: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
     },
     description: {
       type: DataTypes.TEXT,
