@@ -9,6 +9,7 @@ export enum FinancialSourceType {
   STOCKS = 'STOCKS',
   MPESA = 'MPESA',
   SACCO = 'SACCO',
+  CASH = 'CASH',
   OTHER = 'OTHER'
 }
 
