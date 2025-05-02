@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { FinancialSource, FinancialSourceUpdate } from '../models/index';
+import { FinancialSource, FinancialSourceUpdate, NetWorthEvent } from '../models/index';
 import { AppError } from '../utils/appError';
 import { catchAsync } from '../utils/catchAsync';
+import { calculateNetWorth } from '../utils/financialUtils';
 
 // Get all updates for a financial source
 export const getUpdates = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -85,6 +86,25 @@ export const createUpdate = catchAsync(async (req: Request, res: Response, next:
     notes: notes || null,
     date: date ? new Date(date) : new Date()
   });
+  
+  // Calculate and record the new net worth after this update
+  try {
+    // Calculate the current net worth
+    const netWorth = await calculateNetWorth(userId);
+    
+    // Create a net worth event
+    await NetWorthEvent.create({
+      user_id: userId,
+      net_worth: netWorth,
+      event_type: 'BALANCE_UPDATE',
+      event_date: new Date()
+    });
+    
+    console.log(`Net worth event created after balance update: ${netWorth}`);
+  } catch (error) {
+    console.error('Error creating net worth event:', error);
+    // Don't fail the request if net worth event creation fails
+  }
 
   res.status(201).json({
     status: 'success',

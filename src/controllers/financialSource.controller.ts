@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
-import { FinancialSource, FinancialSourceUpdate } from '../models/index';
+import { FinancialSource, FinancialSourceUpdate, NetWorthEvent } from '../models/index';
 import { AppError } from '../utils/appError';
 import { catchAsync } from '../utils/catchAsync';
 import { FinancialSourceType } from '../models/financialSource.model';
 import { Op } from 'sequelize';
+import { calculateNetWorth } from '../utils/financialUtils';
 
 // Get all financial sources for the current user
 export const getFinancialSources = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -84,6 +85,25 @@ export const createFinancialSource = catchAsync(async (req: Request, res: Respon
       notes: notes || 'Initial balance',
       date: new Date()
     });
+    
+    // Calculate and record the new net worth after adding this source
+    try {
+      // Calculate the current net worth
+      const netWorth = await calculateNetWorth(userId);
+      
+      // Create a net worth event
+      await NetWorthEvent.create({
+        user_id: userId,
+        net_worth: netWorth,
+        event_type: 'FINANCIAL_SOURCE_ADDED',
+        event_date: new Date()
+      });
+      
+      console.log(`Net worth event created after adding financial source: ${netWorth}`);
+    } catch (error) {
+      console.error('Error creating net worth event:', error);
+      // Don't fail the request if net worth event creation fails
+    }
   }
 
   // Fetch the created financial source with its updates
@@ -165,8 +185,27 @@ export const deleteFinancialSource = catchAsync(async (req: Request, res: Respon
     return next(new AppError('Financial source not found', 404));
   }
 
-  // Delete the financial source (cascade will delete updates)
+  // Delete the financial source
   await financialSource.destroy();
+  
+  // Calculate and record the new net worth after deleting this source
+  try {
+    // Calculate the current net worth
+    const netWorth = await calculateNetWorth(userId);
+    
+    // Create a net worth event
+    await NetWorthEvent.create({
+      user_id: userId,
+      net_worth: netWorth,
+      event_type: 'FINANCIAL_SOURCE_DELETED',
+      event_date: new Date()
+    });
+    
+    console.log(`Net worth event created after deleting financial source: ${netWorth}`);
+  } catch (error) {
+    console.error('Error creating net worth event:', error);
+    // Don't fail the request if net worth event creation fails
+  }
 
   res.status(204).json({
     status: 'success',

@@ -1,6 +1,7 @@
 import User from './user.model';
 import FinancialSource from './financialSource.model';
 import FinancialSourceUpdate from './financialSourceUpdate.model';
+import NetWorthEvent from './netWorthEvent.model';
 
 // Set up associations
 User.hasMany(FinancialSource, { 
@@ -25,8 +26,21 @@ FinancialSourceUpdate.belongsTo(FinancialSource, {
   as: 'financialSource' 
 });
 
+// Set up associations for NetWorthEvent
+User.hasMany(NetWorthEvent, {
+  foreignKey: 'user_id',
+  as: 'netWorthEvents',
+  onDelete: 'CASCADE'
+});
+
+NetWorthEvent.belongsTo(User, {
+  foreignKey: 'user_id',
+  as: 'user'
+});
+
 export {
   User,
   FinancialSource,
-  FinancialSourceUpdate
+  FinancialSourceUpdate,
+  NetWorthEvent
 };

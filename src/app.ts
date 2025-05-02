@@ -10,6 +10,7 @@ import { AppError } from './utils/appError';
 import authRoutes from './routes/auth.routes';
 import financialSourceRoutes from './routes/financialSource.routes';
 import financialSourceUpdateRoutes from './routes/financialSourceUpdate.routes';
+import netWorthEventRoutes from './routes/netWorthEvent.routes';
 
 dotenv.config();
 
@@ -78,6 +79,7 @@ app.use(cookieParser());
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/financial-sources', financialSourceRoutes);
 app.use('/api/v1/financial-sources/:sourceId/updates', financialSourceUpdateRoutes);
+app.use('/api/v1/net-worth-events', netWorthEventRoutes);
 
 // Health check route
 app.get('/api/v1/health', (req: Request, res: Response) => {
