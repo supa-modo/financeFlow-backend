@@ -57,9 +57,9 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
     // Set token expiration (10 minutes from now)
     this.password_reset_expires = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Save the changes
-    this.save();
-
+    // We don't save here - the controller will handle saving
+    // This prevents issues where the save might fail silently
+    
     // Return the unhashed token (to be sent via email)
     return resetToken;
   }

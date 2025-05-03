@@ -96,12 +96,27 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
 
 // Logout user
 export const logout = (req: Request, res: Response) => {
-  res.cookie('jwt', 'loggedout', {
-    expires: new Date(Date.now() + 10 * 1000),
-    httpOnly: true
-  });
+  // Determine if we're in production
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  // Configure cookie options to match the ones used when setting the cookie
+  const cookieOptions = {
+    expires: new Date(Date.now() + 10 * 1000), // Short expiration
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' as const : 'lax' as const,
+  };
+  
+  // Clear the JWT cookie
+  res.cookie('jwt', 'loggedout', cookieOptions);
+  
+  // Log the logout action
+  console.log('User logged out successfully');
 
-  res.status(200).json({ status: 'success' });
+  res.status(200).json({ 
+    status: 'success',
+    message: 'Logged out successfully'
+  });
 };
 
 // Get current user
@@ -244,29 +259,40 @@ export const forgotPassword = catchAsync(async (req: Request, res: Response, nex
   // Find user by email
   const user = await User.findOne({ where: { email } });
   if (!user) {
-    // For security reasons, we don't want to reveal if a user exists or not
-    // So we still return a success response even if the user doesn't exist
-    return res.status(200).json({
-      status: 'success',
-      message: 'If your email is registered, you will receive a password reset link shortly.'
-    });
+    // Return error if user doesn't exist
+    return next(new AppError('No user found with that email address', 404));
   }
 
   // Generate reset token
   const resetToken = user.createPasswordResetToken();
-  await user.save(); // Save the reset token and expiration to the database
+  
+  // Save the reset token and expiration to the database
+  // Force save to ensure the token is saved even if other validations might fail
+  await user.save({ validate: false });
+  
+  // Log token creation for debugging
+  console.log(`Password reset token created for ${email}: ${resetToken}`);
+  console.log(`Token expires at: ${user.password_reset_expires}`);
 
   try {
-    // Create reset URL
-    const resetUrl = `${req.protocol}://${req.get('host') || 'localhost:3000'}/reset-password/${resetToken}`;
+    // Create reset URL based on environment
+    let clientResetUrl;
     
-    // If in development, create a client-side URL
-    const clientResetUrl = process.env.NODE_ENV === 'development' 
-      ? `http://localhost:3000/reset-password/${resetToken}` 
-      : `${process.env.CLIENT_URL || 'https://financeflow.com'}/reset-password/${resetToken}`;
+    if (process.env.NODE_ENV === 'development') {
+      clientResetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+    } else {
+      // Make sure CLIENT_URL is properly set
+      if (!process.env.CLIENT_URL) {
+        console.warn('CLIENT_URL environment variable is not set. Using default URL.');
+      }
+      clientResetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+    }
+    
+    console.log(`Reset URL created: ${clientResetUrl}`);
 
     // Send email with reset token
     await sendPasswordResetEmail(user.email, resetToken, clientResetUrl);
+    console.log('Password reset email sent successfully');
 
     // Send response
     res.status(200).json({
@@ -274,9 +300,11 @@ export const forgotPassword = catchAsync(async (req: Request, res: Response, nex
       message: 'Password reset link sent to your email.'
     });
   } catch (error) {
+    console.error('Error sending password reset email:', error);
+    
     // If there's an error sending the email, clear the reset token
     user.clearPasswordResetToken();
-    await user.save();
+    await user.save({ validate: false });
 
     return next(new AppError('There was an error sending the password reset email. Please try again later.', 500));
   }
