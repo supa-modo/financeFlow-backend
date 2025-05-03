@@ -25,6 +25,23 @@ export const authSchemas = {
     password: z.string().min(1, 'Password is required')
   }),
 
+  // Forgot password schema
+  forgotPassword: z.object({
+    email: z.string().email('Invalid email address')
+  }),
+
+  // Reset password schema
+  resetPassword: z.object({
+    password: z.string().min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+      .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+      .regex(/[0-9]/, 'Password must contain at least one number'),
+    passwordConfirm: z.string()
+  }).refine(data => data.password === data.passwordConfirm, {
+    message: 'Passwords do not match',
+    path: ['passwordConfirm']
+  }),
+
   // Update password schema
   updatePassword: z.object({
     currentPassword: z.string().min(1, 'Current password is required'),

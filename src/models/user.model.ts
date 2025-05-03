@@ -1,5 +1,6 @@
 import { Model, DataTypes, Optional } from 'sequelize';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import sequelize from '../config/database';
 
 // User attributes interface
@@ -9,6 +10,8 @@ interface UserAttributes {
   email: string;
   password: string;
   notification_settings: object;
+  password_reset_token?: string;
+  password_reset_expires?: Date;
   created_at: Date;
   updated_at: Date;
 }
@@ -23,6 +26,8 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public email!: string;
   public password!: string;
   public notification_settings!: object;
+  public password_reset_token?: string;
+  public password_reset_expires?: Date;
   public created_at!: Date;
   public updated_at!: Date;
 
@@ -36,6 +41,33 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
     // We don't need to hash the password here as it will be hashed by the beforeSave hook
     this.password = newPassword;
     await this.save();
+  }
+
+  // Method to create password reset token
+  public createPasswordResetToken(): string {
+    // Generate a random token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    // Hash the token and store it in the database
+    this.password_reset_token = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+
+    // Set token expiration (10 minutes from now)
+    this.password_reset_expires = new Date(Date.now() + 10 * 60 * 1000);
+
+    // Save the changes
+    this.save();
+
+    // Return the unhashed token (to be sent via email)
+    return resetToken;
+  }
+
+  // Method to clear password reset token
+  public clearPasswordResetToken(): void {
+    this.password_reset_token = undefined;
+    this.password_reset_expires = undefined;
   }
 }
 
@@ -70,6 +102,14 @@ User.init(
         email_notifications: true,
         reminder_frequency: 'weekly',
       },
+    },
+    password_reset_token: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    password_reset_expires: {
+      type: DataTypes.DATE,
+      allowNull: true,
     },
     created_at: {
       type: DataTypes.DATE,

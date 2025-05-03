@@ -1,9 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import { Op } from 'sequelize';
 import { generateToken } from '../config/jwt';
 import User from '../models/user.model';
 import { AppError } from '../utils/appError';
 import { catchAsync } from '../utils/catchAsync';
+import { sendPasswordResetEmail } from '../utils/email';
 
 // Create and send JWT token
 const createSendToken = (user: User, statusCode: number, res: Response) => {
@@ -227,4 +230,96 @@ export const updateNotificationSettings = catchAsync(async (req: Request, res: R
       }
     }
   });
+});
+
+// Forgot password - send reset token via email
+export const forgotPassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const { email } = req.body;
+
+  // Check if email is provided
+  if (!email) {
+    return next(new AppError('Please provide your email address', 400));
+  }
+
+  // Find user by email
+  const user = await User.findOne({ where: { email } });
+  if (!user) {
+    // For security reasons, we don't want to reveal if a user exists or not
+    // So we still return a success response even if the user doesn't exist
+    return res.status(200).json({
+      status: 'success',
+      message: 'If your email is registered, you will receive a password reset link shortly.'
+    });
+  }
+
+  // Generate reset token
+  const resetToken = user.createPasswordResetToken();
+  await user.save(); // Save the reset token and expiration to the database
+
+  try {
+    // Create reset URL
+    const resetUrl = `${req.protocol}://${req.get('host') || 'localhost:3000'}/reset-password/${resetToken}`;
+    
+    // If in development, create a client-side URL
+    const clientResetUrl = process.env.NODE_ENV === 'development' 
+      ? `http://localhost:3000/reset-password/${resetToken}` 
+      : `${process.env.CLIENT_URL || 'https://financeflow.com'}/reset-password/${resetToken}`;
+
+    // Send email with reset token
+    await sendPasswordResetEmail(user.email, resetToken, clientResetUrl);
+
+    // Send response
+    res.status(200).json({
+      status: 'success',
+      message: 'Password reset link sent to your email.'
+    });
+  } catch (error) {
+    // If there's an error sending the email, clear the reset token
+    user.clearPasswordResetToken();
+    await user.save();
+
+    return next(new AppError('There was an error sending the password reset email. Please try again later.', 500));
+  }
+});
+
+// Reset password using token
+export const resetPassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const { token } = req.params;
+  const { password, passwordConfirm } = req.body;
+
+  // Check if password and passwordConfirm are provided
+  if (!password || !passwordConfirm) {
+    return next(new AppError('Please provide password and password confirmation', 400));
+  }
+
+  // Check if passwords match
+  if (password !== passwordConfirm) {
+    return next(new AppError('Passwords do not match', 400));
+  }
+
+  // Hash the token to compare with the one in the database
+  const hashedToken = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
+
+  // Find user by reset token and check if token is still valid
+  const user = await User.findOne({
+    where: {
+      password_reset_token: hashedToken,
+      password_reset_expires: { [Op.gt]: new Date() } // Token must not be expired
+    }
+  });
+
+  if (!user) {
+    return next(new AppError('Token is invalid or has expired', 400));
+  }
+
+  // Update password
+  user.password = password;
+  user.clearPasswordResetToken(); // Clear reset token fields
+  await user.save();
+
+  // Log the user in by sending a JWT token
+  createSendToken(user, 200, res);
 });
