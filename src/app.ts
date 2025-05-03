@@ -37,8 +37,8 @@ app.use(cors({
     // Define allowed origins
     const allowedOrigins = [
       'http://localhost:3000',
-      'http://localhost:5173', // Vite default dev server
       'https://personal-finance-tracker-eight-green.vercel.app',
+      'https://financeflow.com',
       'https://financeflow-app.netlify.app'
     ];
     
@@ -65,7 +65,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Access-Control-Allow-Origin']
 }));
 
 // Body parser, reading data from body into req.body
