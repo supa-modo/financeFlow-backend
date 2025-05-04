@@ -3,8 +3,10 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import passport from 'passport';
 import { errorHandler } from './middlewares/error.middleware';
 import { AppError } from './utils/appError';
+import './config/passport'; // Import passport configuration
 
 // Import routes
 import authRoutes from './routes/auth.routes';
@@ -74,6 +76,9 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // Cookie parser
 app.use(cookieParser());
+
+// Initialize passport
+app.use(passport.initialize());
 
 // API routes
 app.use('/api/v1/auth', authRoutes);

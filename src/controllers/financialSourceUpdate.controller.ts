@@ -3,10 +3,16 @@ import { FinancialSource, FinancialSourceUpdate, NetWorthEvent } from '../models
 import { AppError } from '../utils/appError';
 import { catchAsync } from '../utils/catchAsync';
 import { calculateNetWorth } from '../utils/financialUtils';
+import { User } from '../types/custom';
 
 // Get all updates for a financial source
 export const getUpdates = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user.id;
+  // Check if user exists in request
+  if (!req.user) {
+    return next(new AppError('You must be logged in to access financial source updates', 401));
+  }
+  
+  const userId = (req.user as User).id;
   const { sourceId } = req.params;
 
   // Check if the financial source exists and belongs to the user
@@ -35,7 +41,12 @@ export const getUpdates = catchAsync(async (req: Request, res: Response, next: N
 
 // Get a specific update
 export const getUpdate = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user.id;
+  // Check if user exists in request
+  if (!req.user) {
+    return next(new AppError('You must be logged in to access financial source updates', 401));
+  }
+  
+  const userId = (req.user as User).id;
   const { sourceId, updateId } = req.params;
 
   // Check if the financial source exists and belongs to the user
@@ -66,7 +77,12 @@ export const getUpdate = catchAsync(async (req: Request, res: Response, next: Ne
 
 // Create a new update for a financial source
 export const createUpdate = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user.id;
+  // Check if user exists in request
+  if (!req.user) {
+    return next(new AppError('You must be logged in to create financial source updates', 401));
+  }
+  
+  const userId = (req.user as User).id;
   const { sourceId } = req.params;
   const { balance, notes, date } = req.body;
 
@@ -116,7 +132,12 @@ export const createUpdate = catchAsync(async (req: Request, res: Response, next:
 
 // Update a specific update
 export const updateUpdate = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user.id;
+  // Check if user exists in request
+  if (!req.user) {
+    return next(new AppError('You must be logged in to update financial source updates', 401));
+  }
+  
+  const userId = (req.user as User).id;
   const { sourceId, updateId } = req.params;
   const { balance, notes, date } = req.body;
 
@@ -155,7 +176,12 @@ export const updateUpdate = catchAsync(async (req: Request, res: Response, next:
 
 // Delete a specific update
 export const deleteUpdate = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user.id;
+  // Check if user exists in request
+  if (!req.user) {
+    return next(new AppError('You must be logged in to delete financial source updates', 401));
+  }
+  
+  const userId = (req.user as User).id;
   const { sourceId, updateId } = req.params;
 
   // Check if the financial source exists and belongs to the user

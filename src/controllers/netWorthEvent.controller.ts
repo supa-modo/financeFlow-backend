@@ -3,6 +3,7 @@ import { NetWorthEvent, FinancialSource, FinancialSourceUpdate } from '../models
 import { AppError } from '../utils/appError';
 import { catchAsync } from '../utils/catchAsync';
 import { Op } from 'sequelize';
+import { User } from '../types/custom';
 
 // Define interface for FinancialSource with updates
 interface FinancialSourceWithUpdates extends FinancialSource {
@@ -52,7 +53,12 @@ const calculateNetWorth = async (userId: string): Promise<number> => {
 
 // Create a net worth event
 export const createNetWorthEvent = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user.id;
+  // Check if user exists in request
+  if (!req.user) {
+    return next(new AppError('You must be logged in to create net worth events', 401));
+  }
+  
+  const userId = (req.user as User).id;
   const { eventType, eventDate } = req.body;
   
   // Calculate current net worth
@@ -76,7 +82,12 @@ export const createNetWorthEvent = catchAsync(async (req: Request, res: Response
 
 // Get all net worth events for the current user
 export const getNetWorthEvents = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user.id;
+  // Check if user exists in request
+  if (!req.user) {
+    return next(new AppError('You must be logged in to access net worth events', 401));
+  }
+  
+  const userId = (req.user as User).id;
   const { period = 'all', limit = 100 } = req.query;
   
   // Determine the start date based on the period
@@ -123,7 +134,12 @@ export const getNetWorthEvents = catchAsync(async (req: Request, res: Response, 
 
 // Get a specific net worth event by ID
 export const getNetWorthEvent = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user.id;
+  // Check if user exists in request
+  if (!req.user) {
+    return next(new AppError('You must be logged in to access net worth events', 401));
+  }
+  
+  const userId = (req.user as User).id;
   const { id } = req.params;
   
   const netWorthEvent = await NetWorthEvent.findOne({
@@ -144,7 +160,12 @@ export const getNetWorthEvent = catchAsync(async (req: Request, res: Response, n
 
 // Delete a net worth event
 export const deleteNetWorthEvent = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user.id;
+  // Check if user exists in request
+  if (!req.user) {
+    return next(new AppError('You must be logged in to delete net worth events', 401));
+  }
+  
+  const userId = (req.user as User).id;
   const { id } = req.params;
   
   const netWorthEvent = await NetWorthEvent.findOne({
@@ -165,7 +186,12 @@ export const deleteNetWorthEvent = catchAsync(async (req: Request, res: Response
 
 // Get the latest net worth
 export const getLatestNetWorth = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user.id;
+  // Check if user exists in request
+  if (!req.user) {
+    return next(new AppError('You must be logged in to access net worth data', 401));
+  }
+  
+  const userId = (req.user as User).id;
   
   // Get the latest net worth event
   const latestEvent = await NetWorthEvent.findOne({

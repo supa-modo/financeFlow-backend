@@ -12,6 +12,8 @@ interface UserAttributes {
   notification_settings: object;
   password_reset_token?: string;
   password_reset_expires?: Date;
+  provider?: string;
+  provider_id?: string;
   created_at: Date;
   updated_at: Date;
 }
@@ -28,6 +30,8 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public notification_settings!: object;
   public password_reset_token?: string;
   public password_reset_expires?: Date;
+  public provider?: string;
+  public provider_id?: string;
   public created_at!: Date;
   public updated_at!: Date;
 
@@ -109,6 +113,14 @@ User.init(
     },
     password_reset_expires: {
       type: DataTypes.DATE,
+      allowNull: true,
+    },
+    provider: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    provider_id: {
+      type: DataTypes.STRING,
       allowNull: true,
     },
     created_at: {

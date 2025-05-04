@@ -51,6 +51,8 @@ Represents a user in the system.
 - `name` (String): User's full name
 - `email` (String): User's email address (unique)
 - `password` (String): Hashed password
+- `password_reset_token` (String): Token for password reset (nullable)
+- `password_reset_expires` (Date): Expiration time for password reset token (nullable)
 - `notification_settings` (JSON): User's notification preferences
 - `created_at` (Date): Record creation timestamp
 - `updated_at` (Date): Record update timestamp
@@ -58,6 +60,8 @@ Represents a user in the system.
 **Methods:**
 - `correctPassword(candidatePassword)`: Checks if a provided password matches the stored hash
 - `changePassword(newPassword)`: Updates the user's password
+- `createPasswordResetToken()`: Generates a password reset token and stores its hash
+- `clearPasswordResetToken()`: Clears the password reset token fields
 
 ### Financial Source Model (to be implemented)
 
@@ -101,6 +105,9 @@ Handles user authentication and account management.
 - `logout`: Logs out a user by clearing the JWT cookie
 - `getCurrentUser`: Returns the current authenticated user's information
 - `updatePassword`: Updates a user's password
+- `updateProfile`: Updates a user's profile information
+- `forgotPassword`: Sends a password reset email with a reset token
+- `resetPassword`: Resets a user's password using a valid token
 
 ### Financial Source Controller (to be implemented)
 
@@ -136,6 +143,9 @@ Routes define the API endpoints and connect them to the appropriate controllers.
 - `GET /api/v1/auth/logout`: Logout a user
 - `GET /api/v1/auth/me`: Get current user profile
 - `PATCH /api/v1/auth/update-password`: Update user password
+- `PATCH /api/v1/auth/update-profile`: Update user profile information
+- `POST /api/v1/auth/forgot-password`: Request a password reset email
+- `POST /api/v1/auth/reset-password/:token`: Reset password using a valid token
 
 ### Financial Source Routes (to be implemented)
 
@@ -202,23 +212,19 @@ Handles error processing and formatting.
 
 ## Utilities
 
-Utilities are helper functions used throughout the application.
+Utilities are helper functions used across the application.
 
-### AppError (`src/utils/appError.ts`)
-
-Custom error class for application errors.
-
-**Properties:**
-- `statusCode`: HTTP status code
-- `status`: Error status ('fail' or 'error')
-- `isOperational`: Whether the error is operational or programming
-
-### CatchAsync (`src/utils/catchAsync.ts`)
-
-Utility to handle async errors in Express routes.
+### Error Utilities (`src/utils/appError.ts`, `src/utils/catchAsync.ts`)
 
 **Function:**
 - `catchAsync`: Wraps an async function and catches any errors
+
+### Email Utilities (`src/utils/email.ts`)
+
+**Functions:**
+- `createTransporter`: Creates a nodemailer transporter for sending emails
+- `sendEmail`: Sends an email with specified options
+- `sendPasswordResetEmail`: Sends a password reset email with a reset link
 
 ### Validators (`src/utils/validators.ts`)
 
@@ -228,6 +234,8 @@ Validation utilities for request data.
 - `authSchemas.register`: Validates registration data
 - `authSchemas.login`: Validates login data
 - `authSchemas.updatePassword`: Validates password update data
+- `authSchemas.forgotPassword`: Validates forgot password request data
+- `authSchemas.resetPassword`: Validates password reset data
 
 **Functions:**
 - `validateRequest`: Middleware to validate request data against a schema
@@ -273,9 +281,36 @@ Configures JWT token generation and verification.
 
 2. **Login:**
    - User submits email and password
-   - Server validates the credentials
+   - Server validates the data
+   - Server checks if the user exists and the password is correct
    - JWT token is generated and sent to the client
    - Token is stored as an HTTP-only cookie
+
+3. **Google OAuth Authentication:**
+   - User clicks the Google Sign-in button
+   - User is redirected to Google's authentication page
+   - User grants permission to the application
+   - Google redirects back to our callback URL with an authorization code
+   - Server exchanges the code for user information from Google
+   - Server checks if the user already exists in the database
+     - If user exists, update their Google provider information
+     - If user doesn't exist, create a new user with Google information
+   - JWT token is generated and sent to the client
+   - Token is stored as an HTTP-only cookie
+
+3. **Password Reset:**
+   - User requests a password reset by providing their email
+   - Server validates the email and checks if the user exists
+   - Server generates a reset token and stores its hash in the database
+   - Server sends an email with a reset link containing the token
+   - User clicks the link and submits a new password
+   - Server validates the token and updates the password
+   - User is automatically logged in with a new JWT token
+
+4. **Logout:**
+   - User requests to logout
+   - Server clears the JWT cookie
+   - Client removes user data from local storage
 
 3. **Authentication:**
    - Client includes the JWT cookie in requests
@@ -298,6 +333,16 @@ Configures JWT token generation and verification.
   - Body: `{ email, password }`
   - Response: `{ status, token, data: { user } }`
 
+- `GET /api/v1/auth/google` - Initiate Google OAuth authentication
+  - Redirects to Google's authentication page
+
+- `GET /api/v1/auth/google/callback` - Google OAuth callback
+  - Handles the OAuth response from Google
+  - Creates or updates user in the database
+  - Sets JWT token as HTTP-only cookie
+  - Redirects to frontend
+  - Response: `{ status, token, data: { user } }`
+
 - `GET /api/v1/auth/logout` - Logout a user
   - Response: `{ status }`
 
@@ -306,6 +351,18 @@ Configures JWT token generation and verification.
 
 - `PATCH /api/v1/auth/update-password` - Update user password
   - Body: `{ currentPassword, newPassword, newPasswordConfirm }`
+  - Response: `{ status, token, data: { user } }`
+
+- `PATCH /api/v1/auth/update-profile` - Update user profile
+  - Body: `{ name, email }`
+  - Response: `{ status, data: { user } }`
+
+- `POST /api/v1/auth/forgot-password` - Request password reset
+  - Body: `{ email }`
+  - Response: `{ status, message }`
+
+- `POST /api/v1/auth/reset-password/:token` - Reset password with token
+  - Body: `{ password, passwordConfirm }`
   - Response: `{ status, token, data: { user } }`
 
 ### Financial Sources (to be implemented)

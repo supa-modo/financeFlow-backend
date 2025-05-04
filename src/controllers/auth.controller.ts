@@ -9,7 +9,7 @@ import { catchAsync } from '../utils/catchAsync';
 import { sendPasswordResetEmail } from '../utils/email';
 
 // Create and send JWT token
-const createSendToken = (user: User, statusCode: number, res: Response) => {
+export const createSendToken = (user: User, statusCode: number, res: Response) => {
   const token = generateToken(user.id);
   const cookieExpiresIn = parseInt(process.env.JWT_COOKIE_EXPIRES_IN || '7', 10);
 
@@ -122,7 +122,11 @@ export const logout = (req: Request, res: Response) => {
 // Get current user
 export const getCurrentUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   // Get user from request (set by protect middleware)
-  const user = req.user;
+  const user = req.user as User;
+
+  if (!user) {
+    return next(new AppError('You are not logged in. Please log in to get access.', 401));
+  }
 
   res.status(200).json({
     status: 'success',
@@ -135,19 +139,25 @@ export const getCurrentUser = catchAsync(async (req: Request, res: Response, nex
 // Update password
 export const updatePassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const { currentPassword, newPassword, newPasswordConfirm } = req.body;
-  
-  // Check if all required fields are provided
+
+  // Check if passwords are provided
   if (!currentPassword || !newPassword || !newPasswordConfirm) {
-    return next(new AppError('Please provide all password fields', 400));
+    return next(new AppError('Please provide current password and new password', 400));
   }
-  
+
   // Check if new passwords match
   if (newPassword !== newPasswordConfirm) {
     return next(new AppError('New passwords do not match', 400));
   }
 
+  // Check if user exists in request
+  if (!req.user) {
+    return next(new AppError('You must be logged in to update your password', 401));
+  }
+
   // Get user from database with fresh data
-  const user = await User.findByPk(req.user.id);
+  const userId = (req.user as User).id;
+  const user = await User.findByPk(userId);
   if (!user) {
     return next(new AppError('User not found', 404));
   }
@@ -171,14 +181,20 @@ export const updatePassword = catchAsync(async (req: Request, res: Response, nex
 // Update user profile
 export const updateProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const { name, email } = req.body;
-  
-  // Check if email and name are provided
-  if (!email || !name) {
+
+  // Check if name and email are provided
+  if (!name || !email) {
     return next(new AppError('Please provide both name and email', 400));
   }
 
+  // Check if user exists in request
+  if (!req.user) {
+    return next(new AppError('You must be logged in to update your profile', 401));
+  }
+
   // Get user from database
-  const user = await User.findByPk(req.user.id);
+  const userId = (req.user as User).id;
+  const user = await User.findByPk(userId);
   if (!user) {
     return next(new AppError('User not found', 404));
   }
@@ -221,8 +237,14 @@ export const updateNotificationSettings = catchAsync(async (req: Request, res: R
     return next(new AppError('Please provide notification settings', 400));
   }
 
+  // Check if user exists in request
+  if (!req.user) {
+    return next(new AppError('You must be logged in to update notification settings', 401));
+  }
+
   // Get user from database
-  const user = await User.findByPk(req.user.id);
+  const userId = (req.user as User).id;
+  const user = await User.findByPk(userId);
   if (!user) {
     return next(new AppError('User not found', 404));
   }
@@ -279,13 +301,13 @@ export const forgotPassword = catchAsync(async (req: Request, res: Response, nex
     let clientResetUrl;
     
     if (process.env.NODE_ENV === 'development') {
-      clientResetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+      clientResetUrl = `http://localhost:3000/reset-password/${resetToken}`;
     } else {
       // Make sure CLIENT_URL is properly set
       if (!process.env.CLIENT_URL) {
         console.warn('CLIENT_URL environment variable is not set. Using default URL.');
       }
-      clientResetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+      clientResetUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/reset-password/${resetToken}`;
     }
     
     console.log(`Reset URL created: ${clientResetUrl}`);

@@ -5,14 +5,7 @@ import User from '../models/user.model';
 import { AppError } from '../utils/appError';
 import { catchAsync } from '../utils/catchAsync';
 
-// Extend Request interface to include user property
-declare global {
-  namespace Express {
-    interface Request {
-      user?: any;
-    }
-  }
-}
+// User type is defined in custom.d.ts
 
 // Middleware to protect routes that require authentication
 export const protect = catchAsync(async (req: Request, res: Response, next: NextFunction) => {

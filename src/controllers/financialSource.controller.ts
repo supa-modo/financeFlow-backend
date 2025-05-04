@@ -5,10 +5,16 @@ import { catchAsync } from '../utils/catchAsync';
 import { FinancialSourceType } from '../models/financialSource.model';
 import { Op } from 'sequelize';
 import { calculateNetWorth } from '../utils/financialUtils';
+import { User } from '../types/custom';
 
 // Get all financial sources for the current user
 export const getFinancialSources = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user.id;
+  // Check if user exists in request
+  if (!req.user) {
+    return next(new AppError('You must be logged in to access financial sources', 401));
+  }
+  
+  const userId = (req.user as User).id;
 
   const financialSources = await FinancialSource.findAll({
     where: { user_id: userId },
@@ -34,7 +40,12 @@ export const getFinancialSources = catchAsync(async (req: Request, res: Response
 
 // Get a specific financial source by ID
 export const getFinancialSource = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user.id;
+  // Check if user exists in request
+  if (!req.user) {
+    return next(new AppError('You must be logged in to access financial sources', 401));
+  }
+  
+  const userId = (req.user as User).id;
   const { id } = req.params;
 
   const financialSource = await FinancialSource.findOne({
@@ -63,7 +74,12 @@ export const getFinancialSource = catchAsync(async (req: Request, res: Response,
 
 // Create a new financial source
 export const createFinancialSource = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user.id;
+  // Check if user exists in request
+  if (!req.user) {
+    return next(new AppError('You must be logged in to create financial sources', 401));
+  }
+  
+  const userId = (req.user as User).id;
   const { name, type, institution, description, colorCode, initialBalance, notes } = req.body;
 
   // Create the financial source
@@ -128,7 +144,12 @@ export const createFinancialSource = catchAsync(async (req: Request, res: Respon
 
 // Update a financial source
 export const updateFinancialSource = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user.id;
+  // Check if user exists in request
+  if (!req.user) {
+    return next(new AppError('You must be logged in to update financial sources', 401));
+  }
+  
+  const userId = (req.user as User).id;
   const { id } = req.params;
   const { name, type, institution, description, colorCode, isActive } = req.body;
 
@@ -173,7 +194,12 @@ export const updateFinancialSource = catchAsync(async (req: Request, res: Respon
 
 // Delete a financial source
 export const deleteFinancialSource = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user.id;
+  // Check if user exists in request
+  if (!req.user) {
+    return next(new AppError('You must be logged in to delete financial sources', 401));
+  }
+  
+  const userId = (req.user as User).id;
   const { id } = req.params;
 
   // Find the financial source
@@ -227,7 +253,12 @@ export const getFinancialSourceTypes = catchAsync(async (req: Request, res: Resp
 
 // Get current net worth
 export const getNetWorth = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user.id;
+  // Check if user exists in request
+  if (!req.user) {
+    return next(new AppError('You must be logged in to access net worth data', 401));
+  }
+  
+  const userId = (req.user as User).id;
 
   // Get all active financial sources with their latest updates
   const financialSources = await FinancialSource.findAll({
@@ -260,7 +291,12 @@ export const getNetWorth = catchAsync(async (req: Request, res: Response, next: 
 
 // Get historical net worth data
 export const getHistoricalNetWorth = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user.id;
+  // Check if user exists in request
+  if (!req.user) {
+    return next(new AppError('You must be logged in to access historical net worth data', 401));
+  }
+  
+  const userId = (req.user as User).id;
   const { period = 'month' } = req.query;
 
   // Determine the start date based on the period
